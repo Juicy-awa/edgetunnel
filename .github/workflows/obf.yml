@@ -5,6 +5,7 @@ on:
     paths:
       - '_worker.js' # 只有当 _worker.js 发生变化时才触发，避免不必要的运行
       # 如果你想每次提交都运行，可以去掉 paths 限制
+  workflow_dispatch:
 
 jobs:
   obfuscate_job:
