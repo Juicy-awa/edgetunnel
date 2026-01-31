@@ -40,10 +40,7 @@ jobs:
           # --compact true: 压缩代码
           # --self-defending true: 开启自我保护
           # --control-flow-flattening true: 控制流平坦化（增加阅读难度）
-          javascript-obfuscator _worker.js --output _worker.js \
-            --compact true \
-            --self-defending false \
-            --control-flow-flattening false
+          javascript-obfuscator _worker.source.js --output _worker.js --compact true
 
           echo "混淆完成。"
 
