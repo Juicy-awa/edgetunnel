@@ -1,0 +1,65 @@
+name: Obfuscate
+
+on:
+  push:
+    paths:
+      - '_worker.js' # 只有当 _worker.js 发生变化时才触发，避免不必要的运行
+      # 如果你想每次提交都运行，可以去掉 paths 限制
+
+jobs:
+  obfuscate_job:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # 赋予写权限，以便将混淆后的代码推送到仓库
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # 获取完整的 git 历史，防止推送时报错
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Obfuscator
+        run: npm install -g javascript-obfuscator
+
+      - name: Backup and Obfuscate
+        run: |
+          echo "正在处理 _worker.js..."
+          
+          # 1. 备份原始文件 (例如备份为 _worker.source.js)
+          # 注意：如果已经存在备份，这里会覆盖备份。
+          # 建议本地开发始终修改 _worker.js，不要修改备份文件。
+          cp _worker.js _worker.source.js
+          
+          # 2. 混淆代码并覆盖原文件
+          # 参数说明:
+          # --compact true: 压缩代码
+          # --self-defending true: 开启自我保护
+          # --control-flow-flattening true: 控制流平坦化（增加阅读难度）
+          javascript-obfuscator _worker.js --output _worker.js \
+            --compact true \
+            --self-defending false \
+            --control-flow-flattening false
+
+          echo "混淆完成。"
+
+      - name: Commit and Push changes
+        run: |
+          git config --global user.name "GitHub Action Bot"
+          git config --global user.email "action@github.com"
+          
+          # 添加变动的文件
+          git add _worker.js _worker.source.js
+          
+          # 检查是否有文件发生变化，如果有则提交
+          if git diff --staged --quiet; then
+            echo "没有检测到文件变动 (可能是代码已经被混淆过)"
+          else
+            # [skip ci] 是关键，防止触发无限循环构建
+            git commit -m "Auto obfuscate _worker.js [skip ci]"
+            git push
+          fi
