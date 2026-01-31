@@ -38,3 +38,49 @@ jobs:
           echo "[Error] 由于上游仓库的 workflow 文件变更，导致 GitHub 自动暂停了本次自动更新，你需要手动 Sync Fork 一次，详细教程请查看项目README.md "
           echo "[Error] Due to a change in the workflow file of the upstream repository, GitHub has automatically suspended the scheduled automatic update. You need to manually sync your fork. Please refer to the project README.md for instructions. "
           exit 1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Obfuscator
+        run: npm install -g javascript-obfuscator
+
+      - name: Backup and Obfuscate
+        run: |
+          echo "正在处理 _worker.js..."
+          
+          # 1. 备份原始文件 (例如备份为 _worker.source.js)
+          # 注意：如果已经存在备份，这里会覆盖备份。
+          # 建议本地开发始终修改 _worker.js，不要修改备份文件。
+          cp _worker.js _worker.source.js
+          
+          # 2. 混淆代码并覆盖原文件
+          # 参数说明:
+          # --compact true: 压缩代码
+          # --self-defending true: 开启自我保护
+          # --control-flow-flattening true: 控制流平坦化（增加阅读难度）
+          javascript-obfuscator _worker.js --output _worker.js \
+            --compact true \
+            --self-defending false \
+            --control-flow-flattening false
+
+          echo "混淆完成。"
+
+      - name: Commit and Push changes
+        run: |
+          git config --global user.name "GitHub Action Bot"
+          git config --global user.email "action@github.com"
+          
+          # 添加变动的文件
+          git add _worker.js _worker.source.js
+          
+          # 检查是否有文件发生变化，如果有则提交
+          if git diff --staged --quiet; then
+            echo "没有检测到文件变动 (可能是代码已经被混淆过)"
+          else
+            # [skip ci] 是关键，防止触发无限循环构建
+            git commit -m "Auto obfuscate _worker.js [skip ci]"
+            git push
+          fi
