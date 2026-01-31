@@ -41,7 +41,7 @@ jobs:
           # --compact true: 压缩代码
           # --self-defending true: 开启自我保护
           # --control-flow-flattening true: 控制流平坦化（增加阅读难度）
-          javascript-obfuscator _worker.source.js --output _worker.js --compact true --stringArrayEncoding 'base64'
+          javascript-obfuscator _worker.source.js --output _worker.js --compact true --string-array-encoding 'base64'
 
           echo "混淆完成。"
 
